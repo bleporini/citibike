@@ -1,0 +1,43 @@
+{
+  "properties": {
+    "capacity": {
+      "connect.index": 3,
+      "connect.type": "int32",
+      "type": "number"
+    },
+    "lat": {
+      "connect.index": 1,
+      "connect.type": "float64",
+      "type": "number"
+    },
+    "lon": {
+      "connect.index": 2,
+      "connect.type": "float64",
+      "type": "number"
+    },
+    "name": {
+      "connect.index": 0,
+      "type": "string"
+    },
+    "num_bikes_available": {
+      "connect.index": 4,
+      "connect.type": "int32",
+      "type": "number"
+    },
+    "ratio": {
+      "connect.index": 5,
+      "connect.type": "float64",
+      "type": "number"
+    }
+  },
+  "required": [
+    "name",
+    "lat",
+    "lon",
+    "capacity",
+    "num_bikes_available",
+    "ratio"
+  ],
+  "title": "Record",
+  "type": "object"
+}

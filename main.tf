@@ -83,6 +83,27 @@ resource "confluent_api_key" "app-manager-kafka-api-key" {
   }
 }
 
+resource "confluent_api_key" "app-manager-schema-registry-api-key" {
+  display_name = "app-manager-schema-registry-api-key"
+  description  = "Schema Registry API Key that is owned by 'app-manager' service account"
+  owner {
+    id          = confluent_service_account.app-manager.id
+    api_version = confluent_service_account.app-manager.api_version
+    kind        = confluent_service_account.app-manager.kind
+  }
+
+  managed_resource {
+    id          = confluent_schema_registry_cluster.sr.id
+    api_version = confluent_schema_registry_cluster.sr.api_version
+    kind        = confluent_schema_registry_cluster.sr.kind
+
+    environment {
+      id = confluent_environment.citibike.id
+    }
+  }
+}
+
+
 
 resource "confluent_connector" "stations_info" {
   config_nonsensitive = {
