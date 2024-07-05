@@ -20,3 +20,5 @@ $ ./mvnw compile -Dgmap.key=<your Google Maps API key>
 ```
 
 Then browse to  [http://localhost:8080](http://localhost:8080)
+
+![maps](./citibike.gif)
