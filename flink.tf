@@ -73,7 +73,7 @@ create table `stations.status` (
     station_id string primary key not enforced,
     num_docks_available integer not null,
     num_docks_disabled integer not null,
-    is_returning integer not null,
+    is_returning boolean not null,
     num_bikes_disabled integer not null,
     is_renting integer not null,
     num_ebikes_available integer not null,
@@ -121,7 +121,7 @@ insert into `stations.status` select
     t.num_docks_disabled ,
     t.is_returning ,
     t.num_bikes_disabled ,
-    t.is_renting ,
+    t.is_renting = 1 as `is_renting`,,
     t.num_ebikes_available ,
     t.is_installed ,
     t.last_reported ,
@@ -168,7 +168,7 @@ create table `stations.online` (
      station_id string primary key not enforced,
      num_docks_available integer not null,
      num_docks_disabled integer not null,
-     is_returning integer not null,
+     is_renting boolean not null,
      num_bikes_disabled integer not null,
      is_renting integer not null,
      num_ebikes_available integer not null,
@@ -210,7 +210,7 @@ resource "confluent_flink_statement" "stations_online_dml" {
     id = confluent_environment.citibike.id
   }
   statement  = <<-EOT
-insert into `stations.online` select * from `stations.status` where is_renting = 1;
+insert into `stations.online` select * from `stations.status` where is_renting is true;
 EOT
 
 
@@ -253,7 +253,7 @@ create table `stations.offline` (
      num_docks_disabled integer not null,
      is_returning integer not null,
      num_bikes_disabled integer not null,
-     is_renting integer not null,
+     is_renting boolean not null,
      num_ebikes_available integer not null,
      is_installed integer not null,
      last_reported integer not null,
@@ -293,7 +293,7 @@ resource "confluent_flink_statement" "stations_offline_dml" {
     id = confluent_environment.citibike.id
   }
   statement  = <<-EOT
-  insert into `stations.offline` select * from `stations.status` where is_renting = 0;
+  insert into `stations.offline` select * from `stations.status` where is_renting is false;
 EOT
 
 
