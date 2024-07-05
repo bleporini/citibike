@@ -1,12 +1,22 @@
-Embedded Jetty Examples: Jetty API WebSocket Servers and Clients
+Citibike NYC demo
 ================================================================
 
-Included in this project is a collection of various different ways to
-create a websocket server and client in Embedded Jetty.
+## Build and run
 
-See src/main/java for the code examples.
+### Provision Confluent Cloud components:
 
-Jetty WebSocket Native API Examples
+```shell
+$ export export TF_VAR_confluent_cloud_api_key=<your Confluent Cloud API KEY>
+$ export export TF_VAR_confluent_cloud_api_secret=<your Confluent Cloud API secret>
+$ terraform init 
+$ terraform apply 
+```
 
-* examples.annotated - create a WebSocket using @WebSocket annotation
-* examples.time - a WebSocket server periodically posing messages to connected clients
+### Run the frontend with Google maps:
+
+```shell
+$ cd citibike-gmaps
+$ ./mvnw compile -Dgmap.key=<your Google Maps API key>
+```
+
+Then browse to  [http://localhost:8080](http://localhost:8080)
