@@ -71,17 +71,16 @@ resource "confluent_flink_statement" "stations_status_ddl" {
   statement  = <<-EOT
 create table `stations.status` (
     station_id string primary key not enforced,
-    num_docks_available integer not null,
-    num_docks_disabled integer not null,
-    is_returning integer not null,
-    num_bikes_disabled integer not null,
-    is_renting boolean not null,
-    num_ebikes_available integer not null,
-    is_installed integer not null,
-    last_reported integer not null,
-    legacy_id string not null,
-    num_bikes_available integer not null,
-    eightd_has_available_keys boolean not null
+    num_docks_available integer,
+    num_docks_disabled integer ,
+    is_returning integer,
+    num_bikes_disabled integer,
+    is_renting boolean,
+    num_ebikes_available integer,
+    is_installed integer,
+    last_reported integer,
+    num_bikes_available integer,
+    eightd_has_available_keys boolean
 ) with ('value.format' = 'json-registry');
 EOT
 
@@ -125,7 +124,6 @@ insert into `stations.status` select
     t.num_ebikes_available ,
     t.is_installed ,
     t.last_reported ,
-    t.legacy_id ,
     t.num_bikes_available ,
     t.eightd_has_available_keys
 from `stations.status.raw` s cross join unnest(s.data.stations) as t;
@@ -166,17 +164,16 @@ resource "confluent_flink_statement" "stations_online_ddl" {
   statement  = <<-EOT
 create table `stations.online` (
      station_id string primary key not enforced,
-     num_docks_available integer not null,
-     num_docks_disabled integer not null,
-     is_returning integer not null,
-     num_bikes_disabled integer not null,
-     is_renting boolean not null,
-     num_ebikes_available integer not null,
-     is_installed integer not null,
-     last_reported integer not null,
-     legacy_id string not null,
-     num_bikes_available integer not null,
-     eightd_has_available_keys boolean not null
+     num_docks_available integer ,
+     num_docks_disabled integer ,
+     is_returning integer ,
+     num_bikes_disabled integer ,
+     is_renting boolean ,
+     num_ebikes_available integer ,
+     is_installed integer ,
+     last_reported integer ,
+     num_bikes_available integer,
+     eightd_has_available_keys boolean
 ) with ('value.format' = 'json-registry');
 EOT
 
@@ -249,15 +246,14 @@ resource "confluent_flink_statement" "stations_offline_ddl" {
   statement  = <<-EOT
 create table `stations.offline` (
      station_id string primary key not enforced,
-     num_docks_available integer not null,
-     num_docks_disabled integer not null,
-     is_returning integer not null,
-     num_bikes_disabled integer not null,
-     is_renting boolean not null,
-     num_ebikes_available integer not null,
-     is_installed integer not null,
-     last_reported integer not null,
-     legacy_id string not null,
+     num_docks_available integer ,
+     num_docks_disabled integer ,
+     is_returning integer ,
+     num_bikes_disabled integer ,
+     is_renting boolean ,
+     num_ebikes_available integer ,
+     is_installed integer ,
+     last_reported integer ,
      num_bikes_available integer not null,
      eightd_has_available_keys boolean not null
 ) with ('value.format' = 'json-registry');
