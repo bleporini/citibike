@@ -1,5 +1,5 @@
 resource "local_file" "config"{
-  filename = "${path.cwd}/cli-consumer/target/classes/bicyclesharing.nyc.properties"
+  filename = "${path.cwd}/citibike-gmaps/target/classes/bicyclesharing.nyc.properties"
   content = <<-EOT
 # Kafka
 bootstrap.servers=${replace(confluent_kafka_cluster.citibike.bootstrap_endpoint, "SASL_SSL://", "")}
