@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Title</title>
+    <script>
+        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+            key: `${gmap.key}`,
+            v: "weekly",
+            // Use the 'v' parameter to indicate the version to use (weekly, beta, alpha, etc.).
+            // Add other bootstrap parameters as needed, using camel case.
+        });
+    </script>
+    <style type="text/css">
+        /*
+ * Always set the map height explicitly to define the size of the div element
+ * that contains the map.
+ */
+        #map {
+            height: 100%;
+        }
+
+        /*
+         * Optional: Makes the sample page fill the window.
+         */
+        html,
+        body {
+            height: 70%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .update-green {
+            animation: changeValue-green 2s ease-in-out;
+        }
+        @keyframes changeValue-green {
+            0% {
+                background-color: #00ff00;
+            }
+            50% {
+                background-color: red;
+            }
+            100% {
+                background-color: #00ff00;
+            }
+        }
+        .update-orange {
+            animation: changeValue-orange 2s ease-in-out;
+        }
+        @keyframes changeValue-orange {
+            0% {
+                background-color: orange;
+            }
+            50% {
+                background-color: red;
+            }
+            100% {
+                background-color: orange;
+            }
+        }
+        .update-yellow {
+            animation: changeValue-yellow 2s ease-in-out;
+        }
+        @keyframes changeValue-yellow {
+            0% {
+                background-color: yellow;
+            }
+            50% {
+                background-color: red;
+            }
+            100% {
+                background-color: yellow;
+            }
+        }
+
+
+
+        .station-tag-green {
+            background-color: #00ff00;
+            border-radius: 8px;
+            color: #000000;
+            font-size: 14px;
+            padding: 10px 15px;
+            position: relative;
+        }
+
+        .station-tag-green::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translate(-50%, 0);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #00ff00;
+        }
+
+        .station-tag-orange {
+            background-color: #ff8000;
+            border-radius: 8px;
+            color: #000000;
+            font-size: 14px;
+            padding: 10px 15px;
+            position: relative;
+        }
+
+        .station-tag-orange::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translate(-50%, 0);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #ff8000;
+        }
+
+        .station-tag-yellow {
+            background-color: #fff000;
+            border-radius: 8px;
+            color: #000000;
+            font-size: 14px;
+            padding: 10px 15px;
+            position: relative;
+        }
+
+        .station-tag-yellow::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translate(-50%, 0);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #ffff00;
+        }
+
+
+    </style>
+</head>
+<body>
+<div id="map"></div>
+Number of stations: <span id="stationsCount"></span>
+
+<script>
+    // Initialize and add the map
+//    let map;
+
+    const position = { lat: 40.72795, lng: -73.95414 };
+    const socket = new WebSocket("ws://localhost:8080/stations");
+    const data = {stations: {}};
+    let lastMessageTime=0;
+    const keepAliveTimeout = 10000;
+
+    async function initMap() {
+        socket.onerror = (event) =>
+            console.error('Received error: ', event);
+        socket.addEventListener("open", (event) => {
+            socket.send("start");
+            setInterval(
+                () => {
+                    if (socket.readyState === WebSocket.OPEN && lastMessageTime < Date.now() - keepAliveTimeout) {
+                        socket.send("Keep Alive");
+                        lastMessageTime = Date.now();
+                    }
+                },
+                5000
+            );
+        });
+
+        const { Map } = await google.maps.importLibrary("maps");
+
+        const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+
+        map = new Map(document.getElementById("map"), {
+            zoom: 12,
+            center: position,
+            mapId: "DEMO_MAP_ID",
+        });
+        socket.onmessage = (event) => {
+            lastMessageTime = Date.now();
+            const {id,station:{lat, lon, name, ratio, num_bikes_available}} = JSON.parse(event.data);
+            if (!data.stations[id]){
+                data.stations[id] = {
+                    marker: new AdvancedMarkerElement({
+                        map: map,
+                        position: {lat, lng: lon},
+                        title : `${name}: ${num_bikes_available} bikes available`,
+                        content: ratio > 0.5 ? green(num_bikes_available) : ratio > 0.1 ? yellow(num_bikes_available) : orange(num_bikes_available)
+                    }),
+                    num_bikes_available
+                };
+                document.getElementById('stationsCount').innerHTML = Object.entries(data.stations).length;
+            }else if (data.stations[id].num_bikes_available !== num_bikes_available){
+                console.log(`${name} changed from ${data.stations[id].num_bikes_available} to ${num_bikes_available}`);
+                data.stations[id].num_bikes_available= num_bikes_available;
+                data.stations[id].marker.title = `${name}: ${num_bikes_available} bikes available`;
+                data.stations[id].marker.content = ratio > 0.5 ? green(num_bikes_available, data.stations[id].marker.content) :
+                    ratio > 0.1 ? yellow(num_bikes_available, data.stations[id].marker.content) :
+                        orange(num_bikes_available, data.stations[id].marker.content);
+                console.log(data.stations[id].marker.content);
+            }
+
+        };
+
+;
+        const pin = color => (value, pin) => {
+            const tag = pin ? pin : document.createElement("div");
+            tag.className='station-tag-' + color;
+            tag.textContent = "" + value
+            if (pin) tag.classList.add('update-'+color);
+            tag.addEventListener('animationend', () => tag.classList.remove('update-'+color));
+            return tag;
+        }
+        const orange = pin('orange');
+        const green = pin('green');
+        const yellow = pin('yellow');
+    }
+
+    initMap();
+
+
+
+</script>
+
+
+
+</body>
+</html>
