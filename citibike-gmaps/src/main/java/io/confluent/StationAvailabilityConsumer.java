@@ -11,17 +11,12 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-
-import static java.nio.file.Files.newInputStream;
 
 public class StationAvailabilityConsumer {
 
@@ -50,7 +45,8 @@ public class StationAvailabilityConsumer {
         String clientId = groupId + "-0";
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, clientId);
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_uncommitted");
         String topicName = props.getProperty("stations.color.topic");
         org.apache.kafka.clients.consumer.Consumer<String, JsonNode> consumer = new KafkaConsumer<String, JsonNode>(props);
         consumer.subscribe(Collections.singletonList(topicName));

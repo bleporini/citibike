@@ -186,6 +186,9 @@ Number of stations: <span id="stationsCount"></span>
         });
         socket.onmessage = (event) => {
             lastMessageTime = Date.now();
+            const [y] = event.data;
+            if(y === 'Y') return;
+
             const {id,station:{lat, lon, name, ratio, num_bikes_available}} = JSON.parse(event.data);
             if (!data.stations[id]){
                 data.stations[id] = {

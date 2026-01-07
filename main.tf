@@ -2,7 +2,7 @@ terraform {
   required_providers {
     confluent = {
       source  = "confluentinc/confluent"
-      version = "1.76.0"
+      version = "2.51.0"
     }
   }
 }
@@ -25,14 +25,13 @@ resource "confluent_environment" "citibike" {
   }
 }
 
-resource "confluent_schema_registry_cluster" "sr" {
-  package = "ADVANCED"
-  region {
-    id = var.sr_region
-  }
+data "confluent_schema_registry_cluster" "sr" {
   environment {
     id = confluent_environment.citibike.id
   }
+  depends_on = [
+    confluent_kafka_cluster.citibike
+  ]
 }
 
 
@@ -49,11 +48,10 @@ resource "confluent_kafka_cluster" "citibike" {
 }
 
 resource "confluent_service_account" "app-manager" {
-  display_name = "app-manager"
+  display_name = "app-manager_${random_id.id.id}"
   description  = "Service account to manage 'inventory' Kafka cluster"
 
   depends_on = [
-    confluent_schema_registry_cluster.sr,
     confluent_kafka_cluster.citibike
   ]
 }
@@ -93,9 +91,9 @@ resource "confluent_api_key" "app-manager-schema-registry-api-key" {
   }
 
   managed_resource {
-    id          = confluent_schema_registry_cluster.sr.id
-    api_version = confluent_schema_registry_cluster.sr.api_version
-    kind        = confluent_schema_registry_cluster.sr.kind
+    id          = data.confluent_schema_registry_cluster.sr.id
+    api_version = data.confluent_schema_registry_cluster.sr.api_version
+    kind        = data.confluent_schema_registry_cluster.sr.kind
 
     environment {
       id = confluent_environment.citibike.id

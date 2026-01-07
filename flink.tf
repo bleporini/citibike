@@ -20,7 +20,7 @@ resource "confluent_role_binding" "app-manager-flink-developer" {
 }
 
 resource "confluent_service_account" "statements-runner" {
-  display_name = "statements-runner"
+  display_name = "statements-runner_${random_id.id.id}"
   description  = "Service account for running Flink Statements in 'inventory' Kafka cluster"
 }
 resource "confluent_role_binding" "statements-runner-env-admin" {
@@ -81,7 +81,7 @@ create table `stations.status` (
     last_reported integer,
     num_bikes_available integer,
     eightd_has_available_keys boolean
-) with ('value.format' = 'json-registry');
+) with ('value.format' = 'json-registry', 'kafka.consumer.isolation-level' = 'read-uncommitted');
 EOT
 
 
@@ -174,7 +174,7 @@ create table `stations.online` (
      last_reported integer ,
      num_bikes_available integer,
      eightd_has_available_keys boolean
-) with ('value.format' = 'json-registry');
+) with ('value.format' = 'json-registry', 'kafka.consumer.isolation-level' = 'read-uncommitted');
 EOT
 
 
@@ -256,7 +256,7 @@ create table `stations.offline` (
      last_reported integer ,
      num_bikes_available integer not null,
      eightd_has_available_keys boolean not null
-) with ('value.format' = 'json-registry');
+) with ('value.format' = 'json-registry', 'kafka.consumer.isolation-level' = 'read-uncommitted');
 EOT
 
 
@@ -333,7 +333,7 @@ create table `free.bikes.status` (
         is_reserved boolean not null,
         lon double not null,
         name string not null)
-with ('value.format' = 'json-registry');
+with ('value.format' = 'json-registry', 'kafka.consumer.isolation-level' = 'read-uncommitted');
 EOT
 
 
@@ -415,7 +415,7 @@ create table `stations.info`(
   lat double not null,
   lon double not null,
   capacity integer not null
-)with ( 'value.format' = 'json-registry' );
+)with ( 'value.format' = 'json-registry' ,'kafka.consumer.isolation-level' = 'read-uncommitted');
 EOT
 
 
@@ -492,12 +492,12 @@ resource "confluent_flink_statement" "stations_color_ddl" {
 create table `stations.color`(
   station_id string primary key not enforced,
   name string not null,
-  lat double not null,
-  lon double not null,
-  capacity integer not null,
-  num_bikes_available int not null,
-  ratio double not null
-)with( 'value.format' = 'json-registry' );
+  lat double ,
+  lon double ,
+  capacity integer ,
+  num_bikes_available int,
+  ratio double
+)with( 'value.format' = 'json-registry', 'kafka.consumer.isolation-level' = 'read-uncommitted' );
 EOT
 
   properties = {

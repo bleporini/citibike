@@ -16,12 +16,15 @@ package io.confluent;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 
+import java.time.Duration;
+
 @SuppressWarnings("serial")
 public class StationsWebSocketServlet extends JettyWebSocketServlet
 {
     @Override
     public void configure(JettyWebSocketServletFactory factory)
     {
+        factory.setIdleTimeout(Duration.ofDays(1));
         factory.register(StationsWebSocket.class);
     }
 }

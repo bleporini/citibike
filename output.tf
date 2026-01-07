@@ -11,7 +11,7 @@ num.partitions=6
 replication.factor=3
 
 # Schema Registry
-schema.registry.url=${confluent_schema_registry_cluster.sr.rest_endpoint}
+schema.registry.url=${data.confluent_schema_registry_cluster.sr.rest_endpoint}
 schema.registry.basic.auth.user.info=${confluent_api_key.app-manager-schema-registry-api-key.id}:${confluent_api_key.app-manager-schema-registry-api-key.secret}
 
 basic.auth.credentials.source=USER_INFO
