@@ -2,238 +2,578 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>🚲 NYC Citibike Live</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚲</text></svg>">
     <script>
         (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
             key: `${gmap.key}`,
             v: "weekly",
-            // Use the 'v' parameter to indicate the version to use (weekly, beta, alpha, etc.).
-            // Add other bootstrap parameters as needed, using camel case.
         });
     </script>
-    <style type="text/css">
-        /*
- * Always set the map height explicitly to define the size of the div element
- * that contains the map.
- */
-        #map {
-            height: 100%;
-        }
+    <style>
+        * { box-sizing: border-box; }
 
-        /*
-         * Optional: Makes the sample page fill the window.
-         */
-        html,
-        body {
-            height: 70%;
+        html, body {
+            height: 100%;
             margin: 0;
             padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        .update-green {
-            animation: changeValue-green 2s ease-in-out;
-        }
-        @keyframes changeValue-green {
-            0% {
-                background-color: #00ff00;
-            }
-            50% {
-                background-color: red;
-            }
-            100% {
-                background-color: #00ff00;
-            }
-        }
-        .update-orange {
-            animation: changeValue-orange 2s ease-in-out;
-        }
-        @keyframes changeValue-orange {
-            0% {
-                background-color: orange;
-            }
-            50% {
-                background-color: red;
-            }
-            100% {
-                background-color: orange;
-            }
-        }
-        .update-yellow {
-            animation: changeValue-yellow 2s ease-in-out;
-        }
-        @keyframes changeValue-yellow {
-            0% {
-                background-color: yellow;
-            }
-            50% {
-                background-color: red;
-            }
-            100% {
-                background-color: yellow;
-            }
+        #map {
+            position: absolute;
+            inset: 0;
         }
 
+        /* ── HUD ── */
+        #hud {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 10;
+            background: rgba(15, 20, 30, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: #fff;
+            min-width: 210px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
 
+        #hud h1 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-        .station-tag-green {
-            background-color: #00ff00;
-            border-radius: 8px;
-            color: #000000;
-            font-size: 14px;
-            padding: 10px 15px;
+        #hud .stat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 6px;
+        }
+
+        #hud .stat-row .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        #hud .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 10px 0;
+        }
+
+        #hud .counts {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+        }
+
+        #hud .counts .badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-weight: 600;
+        }
+
+        #hud .counts .badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f97316;
+            display: inline-block;
+            margin-right: 2px;
+            transition: background 0.4s;
+        }
+        #status-dot.live { background: #22c55e; animation: pulse 2s infinite; }
+        #status-dot.error { background: #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ── Activity feed ── */
+        #feed {
+            position: absolute;
+            bottom: 24px;
+            left: 16px;
+            z-index: 10;
+            width: 300px;
+            background: rgba(15, 20, 30, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        #feed h2 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        #feed-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+            max-height: 200px;
+        }
+
+        #feed-list li {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            padding: 4px 6px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Info panel (side drawer) ── */
+        #info-panel {
+            position: absolute;
+            top: 0;
+            right: -340px;
+            width: 320px;
+            height: 100%;
+            z-index: 20;
+            background: rgba(15, 20, 30, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 24px 20px;
+            color: #fff;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -4px 0 32px rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+
+        #info-panel.open { right: 0; }
+
+        #info-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        #info-close:hover { background: rgba(255,255,255,0.2); }
+
+        #info-panel h2 {
+            font-size: 17px;
+            font-weight: 700;
+            margin: 0 0 4px;
+            padding-right: 36px;
+            line-height: 1.3;
+        }
+
+        #info-panel .info-subtitle {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 20px;
+        }
+
+        .info-metric {
+            margin-bottom: 14px;
+        }
+
+        .info-metric .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 4px;
+        }
+
+        .info-metric .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .info-metric .value small {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .info-grid-item {
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .info-grid-item .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 2px;
+        }
+
+        .info-grid-item .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* ── Marker pin styles ── */
+        .bike-pin {
             position: relative;
+            border-radius: 10px;
+            color: #000;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 5px 9px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            transition: transform 0.15s ease;
+            cursor: pointer;
         }
 
-        .station-tag-green::after {
+        .bike-pin::after {
             content: "";
             position: absolute;
             left: 50%;
             top: 100%;
-            transform: translate(-50%, 0);
+            transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid #00ff00;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
         }
 
-        .station-tag-orange {
-            background-color: #ff8000;
-            border-radius: 8px;
-            color: #000000;
-            font-size: 14px;
-            padding: 10px 15px;
-            position: relative;
+        .bike-pin.green  { background: #22c55e; }
+        .bike-pin.green::after  { border-top: 6px solid #22c55e; }
+        .bike-pin.yellow { background: #eab308; }
+        .bike-pin.yellow::after { border-top: 6px solid #eab308; }
+        .bike-pin.orange { background: #f97316; }
+        .bike-pin.orange::after { border-top: 6px solid #f97316; }
+
+        .bike-pin.flash {
+            animation: pinFlash 0.6s ease;
         }
 
-        .station-tag-orange::after {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 100%;
-            transform: translate(-50%, 0);
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid #ff8000;
+        @keyframes pinFlash {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(1.35); }
+            100% { transform: scale(1); }
         }
-
-        .station-tag-yellow {
-            background-color: #fff000;
-            border-radius: 8px;
-            color: #000000;
-            font-size: 14px;
-            padding: 10px 15px;
-            position: relative;
-        }
-
-        .station-tag-yellow::after {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 100%;
-            transform: translate(-50%, 0);
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid #ffff00;
-        }
-
-
     </style>
 </head>
 <body>
+
 <div id="map"></div>
-Number of stations: <span id="stationsCount"></span>
+
+<!-- HUD -->
+<div id="hud">
+    <h1>🚲 NYC Citibike Live</h1>
+    <div class="stat-row">
+        <span id="status-dot"></span>
+        <span id="status-text">Connecting…</span>
+    </div>
+    <div class="stat-row">
+        <div class="dot" style="background:#fff"></div>
+        <span id="stationsCount">0</span> stations loaded
+    </div>
+    <hr class="divider">
+    <div class="counts">
+        <div class="badge"><div class="dot" style="background:#22c55e"></div><span id="count-green">0</span></div>
+        <div class="badge"><div class="dot" style="background:#eab308"></div><span id="count-yellow">0</span></div>
+        <div class="badge"><div class="dot" style="background:#f97316"></div><span id="count-orange">0</span></div>
+    </div>
+</div>
+
+<!-- Activity feed -->
+<div id="feed">
+    <h2>⚡ Live updates</h2>
+    <ul id="feed-list"></ul>
+</div>
+
+<!-- Info panel -->
+<div id="info-panel">
+    <button id="info-close" onclick="closePanel()">✕</button>
+    <h2 id="info-name">—</h2>
+    <div class="info-subtitle" id="info-id"></div>
+
+    <div class="info-metric">
+        <div class="label">Bike availability</div>
+        <div class="value" id="info-ratio-pct">—</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="info-bar"></div>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-grid-item">
+            <div class="label">🚲 Bikes</div>
+            <div class="value" id="info-bikes">—</div>
+        </div>
+        <div class="info-grid-item">
+            <div class="label">⚡ E-bikes</div>
+            <div class="value" id="info-ebikes">—</div>
+        </div>
+        <div class="info-grid-item">
+            <div class="label">🅿️ Docks free</div>
+            <div class="value" id="info-docks">—</div>
+        </div>
+        <div class="info-grid-item">
+            <div class="label">📦 Capacity</div>
+            <div class="value" id="info-capacity">—</div>
+        </div>
+    </div>
+</div>
 
 <script>
-    // Initialize and add the map
-//    let map;
-
     const position = { lat: 40.72795, lng: -73.95414 };
-    const socket = new WebSocket("ws://localhost:8080/stations");
-    const data = {stations: {}};
-    let lastMessageTime=0;
+    const data = { stations: {} };
+    let map;
+    let lastMessageTime = 0;
     const keepAliveTimeout = 10000;
+    const FEED_MAX = 8;
 
-    async function initMap() {
-        socket.onerror = (event) =>
-            console.error('Received error: ', event);
-        socket.addEventListener("open", (event) => {
-            socket.send("start");
-            setInterval(
-                () => {
-                    if (socket.readyState === WebSocket.OPEN && lastMessageTime < Date.now() - keepAliveTimeout) {
-                        socket.send("Keep Alive");
-                        lastMessageTime = Date.now();
-                    }
-                },
-                5000
-            );
+    // ── Stats counters ──
+    const counts = { green: 0, yellow: 0, orange: 0 };
+
+    function colorFor(ratio) {
+        return ratio > 0.5 ? 'green' : ratio > 0.1 ? 'yellow' : 'orange';
+    }
+
+    function updateCountEl(color, delta) {
+        counts[color] = Math.max(0, counts[color] + delta);
+        document.getElementById('count-' + color).textContent = counts[color];
+    }
+
+    // ── Pins ──
+    function makePin(color, value) {
+        const el = document.createElement('div');
+        el.className = 'bike-pin ' + color;
+        el.innerHTML = `🚲 <span>${value}</span>`;
+        return el;
+    }
+
+    function updatePin(el, color, value) {
+        el.className = 'bike-pin ' + color;
+        el.querySelector('span').textContent = value;
+        el.classList.add('flash');
+        el.addEventListener('animationend', () => el.classList.remove('flash'), { once: true });
+    }
+
+    // ── Info panel ──
+    let openStationId = null;
+
+    function openPanel(id) {
+        openStationId = id;
+        refreshPanel(id);
+        document.getElementById('info-panel').classList.add('open');
+    }
+
+    function closePanel() {
+        openStationId = null;
+        document.getElementById('info-panel').classList.remove('open');
+    }
+
+    function refreshPanel(id) {
+        const s = data.stations[id];
+        if (!s) return;
+        const { name, ratio, num_bikes_available, num_ebikes_available, num_docks_available, capacity } = s;
+        const pct = Math.round(ratio * 100);
+        const barColor = ratio > 0.5 ? '#22c55e' : ratio > 0.1 ? '#eab308' : '#f97316';
+        document.getElementById('info-name').textContent = name;
+        document.getElementById('info-id').textContent = `Station ${id}`;
+        document.getElementById('info-ratio-pct').textContent = `${pct}% full`;
+        const bar = document.getElementById('info-bar');
+        bar.style.width = pct + '%';
+        bar.style.background = barColor;
+        document.getElementById('info-bikes').textContent = num_bikes_available ?? '—';
+        document.getElementById('info-ebikes').textContent = num_ebikes_available ?? '—';
+        document.getElementById('info-docks').textContent = num_docks_available ?? '—';
+        document.getElementById('info-capacity').textContent = capacity ?? '—';
+    }
+
+    // ── Activity feed ──
+    function pushFeed(name, oldCount, newCount) {
+        const list = document.getElementById('feed-list');
+        const arrow = newCount > oldCount ? '↑' : '↓';
+        const li = document.createElement('li');
+        li.textContent = `${arrow} ${name}: ${oldCount} → ${newCount} bikes`;
+        list.prepend(li);
+        while (list.children.length > FEED_MAX) list.removeChild(list.lastChild);
+    }
+
+    // ── WebSocket with reconnect ──
+    function connect() {
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-text');
+        const socket = new WebSocket(`ws://${location.host}/stations`);
+
+        socket.addEventListener('open', () => {
+            dot.className = 'live';
+            txt.textContent = 'Live';
+            socket.send('start');
+            setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN && lastMessageTime < Date.now() - keepAliveTimeout) {
+                    socket.send('Keep Alive');
+                    lastMessageTime = Date.now();
+                }
+            }, 5000);
         });
 
-        const { Map } = await google.maps.importLibrary("maps");
-
-        const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
-
-        map = new Map(document.getElementById("map"), {
-            zoom: 12,
-            center: position,
-            mapId: "DEMO_MAP_ID",
-        });
-        socket.onmessage = (event) => {
-            lastMessageTime = Date.now();
-            const [y] = event.data;
-            if(y === 'Y') return;
-
-            const {id,station:{lat, lon, name, ratio, num_bikes_available}} = JSON.parse(event.data);
-            if (!data.stations[id]){
-                data.stations[id] = {
-                    marker: new AdvancedMarkerElement({
-                        map: map,
-                        position: {lat, lng: lon},
-                        title : `${name}: ${num_bikes_available} bikes available`,
-                        content: ratio > 0.5 ? green(num_bikes_available) : ratio > 0.1 ? yellow(num_bikes_available) : orange(num_bikes_available)
-                    }),
-                    num_bikes_available
-                };
-                document.getElementById('stationsCount').innerHTML = Object.entries(data.stations).length;
-            }else if (data.stations[id].num_bikes_available !== num_bikes_available){
-                console.log(`${name} changed from ${data.stations[id].num_bikes_available} to ${num_bikes_available}`);
-                data.stations[id].num_bikes_available= num_bikes_available;
-                data.stations[id].marker.title = `${name}: ${num_bikes_available} bikes available`;
-                data.stations[id].marker.content = ratio > 0.5 ? green(num_bikes_available, data.stations[id].marker.content) :
-                    ratio > 0.1 ? yellow(num_bikes_available, data.stations[id].marker.content) :
-                        orange(num_bikes_available, data.stations[id].marker.content);
-                console.log(data.stations[id].marker.content);
-            }
-
+        socket.onerror = () => {
+            dot.className = 'error';
+            txt.textContent = 'Connection error';
         };
 
-;
-        const pin = color => (value, pin) => {
-            const tag = pin ? pin : document.createElement("div");
-            tag.className='station-tag-' + color;
-            tag.textContent = "" + value
-            if (pin) tag.classList.add('update-'+color);
-            tag.addEventListener('animationend', () => tag.classList.remove('update-'+color));
-            return tag;
-        }
-        const orange = pin('orange');
-        const green = pin('green');
-        const yellow = pin('yellow');
+        socket.onclose = () => {
+            dot.className = 'error';
+            txt.textContent = 'Reconnecting…';
+            setTimeout(connect, 3000);
+        };
+
+        socket.onmessage = (event) => {
+            lastMessageTime = Date.now();
+            if (event.data[0] === 'Y') return;
+
+            const { id, station } = JSON.parse(event.data);
+            const { lat, lon, name, ratio, num_bikes_available } = station;
+            const color = colorFor(ratio);
+
+            if (!data.stations[id]) {
+                // New station
+                const content = makePin(color, num_bikes_available);
+                content.addEventListener('click', () => openPanel(id));
+
+                const marker = new AdvancedMarkerElement({
+                    map,
+                    position: { lat, lng: lon },
+                    title: `${name}: ${num_bikes_available} bikes`,
+                    content,
+                });
+                data.stations[id] = { marker, content, color, num_bikes_available, ...station };
+                updateCountEl(color, +1);
+                document.getElementById('stationsCount').textContent = Object.keys(data.stations).length;
+            } else {
+                const prev = data.stations[id];
+                const prevColor = prev.color;
+                const changed = prev.num_bikes_available !== num_bikes_available;
+
+                // Always update stored data
+                Object.assign(data.stations[id], station, { color });
+
+                if (changed || prevColor !== color) {
+                    updatePin(prev.content, color, num_bikes_available);
+                    prev.marker.title = `${name}: ${num_bikes_available} bikes`;
+                }
+
+                if (changed) {
+                    if (prevColor !== color) {
+                        updateCountEl(prevColor, -1);
+                        updateCountEl(color, +1);
+                    }
+                    pushFeed(name, prev.num_bikes_available, num_bikes_available);
+                    if (openStationId === id) refreshPanel(id);
+                }
+                data.stations[id].num_bikes_available = num_bikes_available;
+            }
+        };
+    }
+
+    // ── Map init ──
+    let AdvancedMarkerElement;
+
+    async function initMap() {
+        const { Map } = await google.maps.importLibrary('maps');
+        ({ AdvancedMarkerElement } = await google.maps.importLibrary('marker'));
+
+        map = new Map(document.getElementById('map'), {
+            zoom: 13,
+            center: position,
+            mapId: 'DEMO_MAP_ID',
+            colorScheme: google.maps.ColorScheme?.DARK,
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+        });
+
+        connect();
     }
 
     initMap();
-
-
-
 </script>
-
-
 
 </body>
 </html>
