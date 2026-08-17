@@ -50,11 +50,12 @@ public class StationAvailabilityConsumer {
         String topicName = props.getProperty("stations.color.topic");
         org.apache.kafka.clients.consumer.Consumer<String, JsonNode> consumer = new KafkaConsumer<String, JsonNode>(props);
         consumer.subscribe(Collections.singletonList(topicName));
+        final ObjectMapper om = new ObjectMapper();
         while (true) {
             ConsumerRecords<String, JsonNode> records = consumer.poll(Duration.ofMillis(1000));
             for (ConsumerRecord<String, JsonNode> record : records) {
                 if (record.value() == null) continue;
-                StationAvailability station = new ObjectMapper().convertValue(record.value(), new TypeReference<StationAvailability>() {
+                StationAvailability station = om.convertValue(record.value(), new TypeReference<StationAvailability>() {
                 });
                 consumers.forEach(c -> c.accept(record.key(), station));
             }
