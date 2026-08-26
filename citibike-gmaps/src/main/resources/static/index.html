@@ -148,20 +148,49 @@
             flex-direction: column;
             gap: 4px;
             overflow: hidden;
-            max-height: 200px;
+            max-height: 220px;
         }
 
         #feed-list li {
             font-size: 12px;
             color: rgba(255,255,255,0.8);
-            padding: 4px 6px;
+            padding: 5px 8px;
             border-radius: 6px;
             background: rgba(255,255,255,0.05);
+            animation: slideIn 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        #feed-list li .feed-name {
+            font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            animation: slideIn 0.3s ease;
         }
+
+        #feed-list li .feed-detail {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #feed-list li .feed-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        #feed-list li .feed-delta {
+            font-weight: 700;
+        }
+
+        #feed-list li .feed-delta.up   { color: #22c55e; }
+        #feed-list li .feed-delta.down { color: #f97316; }
 
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(6px); }
@@ -464,11 +493,23 @@
     }
 
     // ── Activity feed ──
-    function pushFeed(name, oldCount, newCount) {
+    function pushFeed(id, name, oldCount, newCount, newColor) {
         const list = document.getElementById('feed-list');
-        const arrow = newCount > oldCount ? '↑' : '↓';
+        const displayName = (name && !name.includes('::')) ? name : `Station ${id}`;
+        const delta = newCount - oldCount;
+        const sign  = delta > 0 ? '+' : '';
+        const dir   = delta > 0 ? 'up' : 'down';
+        const arrow = delta > 0 ? '↑' : '↓';
+        const dotColor = newColor === 'green' ? '#22c55e' : newColor === 'yellow' ? '#eab308' : '#f97316';
+
         const li = document.createElement('li');
-        li.textContent = `${arrow} ${name}: ${oldCount} → ${newCount} bikes`;
+        li.innerHTML =
+            `<span class="feed-name">${displayName}</span>` +
+            `<span class="feed-detail">` +
+              `<span class="feed-dot" style="background:${dotColor}"></span>` +
+              `<span class="feed-delta ${dir}">${arrow} ${sign}${delta} bike${Math.abs(delta) !== 1 ? 's' : ''}</span>` +
+              `<span>${oldCount} → ${newCount} &nbsp;·&nbsp; ${Math.round(newCount)} avail</span>` +
+            `</span>`;
         list.prepend(li);
         while (list.children.length > FEED_MAX) list.removeChild(list.lastChild);
     }
@@ -542,7 +583,7 @@
                         updateCountEl(prevColor, -1);
                         updateCountEl(color, +1);
                     }
-                    pushFeed(name, prev.num_bikes_available, num_bikes_available);
+                    pushFeed(id, name, prev.num_bikes_available, num_bikes_available, color);
                     if (openStationId === id) refreshPanel(id);
                 }
                 data.stations[id].num_bikes_available = num_bikes_available;
