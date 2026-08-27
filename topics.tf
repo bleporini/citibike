@@ -2,6 +2,10 @@ resource "confluent_kafka_topic" "stations_raw" {
   partitions_count = 6
   topic_name       = "stations.raw"
 
+  config = {
+    "retention.ms" = "86400000"
+  }
+
   kafka_cluster {
     id = confluent_kafka_cluster.citibike.id
   }
@@ -20,6 +24,11 @@ resource "confluent_kafka_topic" "stations_raw" {
 resource "confluent_kafka_topic" "system_regions" {
   partitions_count = 6
   topic_name       = "system.regions"
+
+  config = {
+    "retention.ms" = "86400000"
+  }
+
   kafka_cluster {
     id = confluent_kafka_cluster.citibike.id
   }
@@ -38,6 +47,11 @@ resource "confluent_kafka_topic" "system_regions" {
 resource "confluent_kafka_topic" "stations_info_raw" {
   partitions_count = 6
   topic_name       = "stations.info.raw"
+
+  config = {
+    "retention.ms" = "86400000"
+  }
+
   kafka_cluster {
     id = confluent_kafka_cluster.citibike.id
   }
@@ -56,6 +70,11 @@ resource "confluent_kafka_topic" "stations_info_raw" {
 resource "confluent_kafka_topic" "stations_status_raw" {
   partitions_count = 6
   topic_name       = "stations.status.raw"
+
+  config = {
+    "retention.ms" = "86400000"
+  }
+
   kafka_cluster {
     id = confluent_kafka_cluster.citibike.id
   }
@@ -73,6 +92,11 @@ resource "confluent_kafka_topic" "stations_status_raw" {
 resource "confluent_kafka_topic" "free_bikes_status_raw" {
   partitions_count = 6
   topic_name       = "free.bikes.status.raw"
+
+  config = {
+    "retention.ms" = "86400000"
+  }
+
   kafka_cluster {
     id = confluent_kafka_cluster.citibike.id
   }
